@@ -1,0 +1,24 @@
+[package]
+name = "feature_builder"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "feature_builder"
+path = "src/lib.rs"
+
+[[bin]]
+name = "feature_builder"
+path = "src/main.rs"
+
+[dependencies]
+anyhow = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+chrono = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+clap = { workspace = true }
+polars = { workspace = true }
+common = { path = "../common" }
+datastore = { path = "../datastore" }

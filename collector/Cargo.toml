@@ -1,0 +1,31 @@
+[package]
+name = "collector"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "collector"
+path = "src/lib.rs"
+
+[[bin]]
+name = "collector"
+path = "src/main.rs"
+
+[dependencies]
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+chrono = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+clap = { workspace = true }
+tokio = { workspace = true }
+reqwest = { workspace = true }
+tokio-tungstenite = { workspace = true }
+url = { workspace = true }
+flate2 = { workspace = true }
+rand = { workspace = true }
+futures-util = { workspace = true }
+common = { path = "../common" }
+datastore = { path = "../datastore" }

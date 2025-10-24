@@ -1,0 +1,25 @@
+[package]
+name = "backtester"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "backtester"
+path = "src/lib.rs"
+
+[[bin]]
+name = "backtester"
+path = "src/main.rs"
+
+[dependencies]
+anyhow = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+chrono = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+clap = { workspace = true }
+polars = { workspace = true }
+csv = { workspace = true }
+common = { path = "../common" }
+datastore = { path = "../datastore" }

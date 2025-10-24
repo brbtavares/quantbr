@@ -1,0 +1,9 @@
+/target/
+**/*.log
+**/*.ndjson
+**/*.ndjson.gz
+**/*.parquet
+/data/
+.DS_Store
+.idea/
+.vscode/
