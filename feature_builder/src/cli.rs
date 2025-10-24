@@ -1,6 +1,6 @@
 use clap::{Parser, ValueHint};
 
-/// Build 1s features from raw ndjson.gz trades.
+/// Build 1s features from raw Parquet trades.
 #[derive(Debug, Parser, Clone)]
 #[command(name = "feature_builder", version, about = "Aggregate trades -> 1s features Parquet")]
 pub struct Cli {

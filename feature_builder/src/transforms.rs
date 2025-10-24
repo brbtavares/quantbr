@@ -3,7 +3,7 @@ use common::{timeutils, Bar1s, FeatureRow, Trade};
 use tracing::info;
 
 use crate::cli::Cli;
-use datastore::{ndjson, parquetio, manifest};
+use datastore::{rawparquet, parquetio, manifest};
 
 /// Run feature building for date range.
 pub fn run(cli: Cli) -> anyhow::Result<()> {
@@ -14,9 +14,8 @@ pub fn run(cli: Cli) -> anyhow::Result<()> {
     let mut written_dates: Vec<String> = Vec::new();
     while date <= to {
         let ds = date.to_string();
-        let raws = ndjson::read_raw_day(&cli.input, &cli.symbol, &ds)
+        let trades = rawparquet::read_raw_day(&cli.input, &cli.symbol, &ds)
             .with_context(|| format!("read raw {ds}"))?;
-        let trades = parse_trades(&raws)?;
         let bars = aggregate_1s(&trades);
         let feats = compute_features(&bars);
         parquetio::write_features(&cli.output, &cli.symbol, &ds, &feats)?;
@@ -30,23 +29,7 @@ pub fn run(cli: Cli) -> anyhow::Result<()> {
     Ok(())
 }
 
-fn parse_trades(raws: &[ndjson::RawMessage]) -> anyhow::Result<Vec<Trade>> {
-    let mut out = Vec::with_capacity(raws.len());
-    for r in raws {
-        let v: serde_json::Value = serde_json::from_str(&r.payload)?;
-        // support both trade and aggTrade payloads by probing fields
-        let ts = v.get("E").or_else(|| v.get("T")).and_then(|x| x.as_i64()).unwrap_or(r.ts);
-        let seq = v.get("t").and_then(|x| x.as_i64());
-        let price = v.get("p").or_else(|| v.get("price")).and_then(|x| x.as_str()).unwrap_or("0").parse().unwrap_or(0.0);
-        let qty = v.get("q").or_else(|| v.get("quantity")).and_then(|x| x.as_str()).unwrap_or("0").parse().unwrap_or(0.0);
-        let is_buyer_maker = v.get("m").and_then(|x| x.as_bool()).unwrap_or(false);
-        let symbol = v.get("s").and_then(|x| x.as_str()).unwrap_or("").to_string();
-        out.push(Trade{ ts, seq, price, qty, is_buyer_maker, symbol });
-    }
-    // order by (ts, seq)
-    out.sort_by_key(|t| (t.ts, t.seq.unwrap_or(0)));
-    Ok(out)
-}
+// no parse_trades needed; raw parquet provides Trade rows directly
 
 /// Aggregate trades into 1-second bars.
 pub fn aggregate_1s(trades: &[Trade]) -> Vec<Bar1s> {
@@ -123,7 +106,8 @@ mod tests {
         for i in 0..30 { bars.push(Bar1s{ ts_ns: i, open: 1.0, high: 1.0, low: 1.0, close: i as f64, volume: 1.0, vwap: i as f64, buy_volume: 0.5, sell_volume: 0.5, order_imbalance: 0.0 }); }
         let feats = compute_features(&bars);
         assert_eq!(feats.len(), 30);
-        assert!(feats[0].ema20 > 0.0);
+        // First EMA equals first close; here it's 0.0
+        assert_eq!(feats[0].ema20, bars[0].close);
         assert!(feats.last().unwrap().ema20 > feats[10].ema20);
     }
 

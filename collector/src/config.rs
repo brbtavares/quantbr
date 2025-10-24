@@ -1,8 +1,8 @@
 use clap::{Parser, ValueHint};
 
-/// Collector CLI; connects to Binance public streams and writes raw ndjson.gz files.
+/// Collector CLI; connects to Binance public streams and writes raw parquet files.
 #[derive(Debug, Parser, Clone)]
-#[command(name = "collector", version, about = "Binance collector -> ndjson.gz")] 
+#[command(name = "collector", version, about = "Binance collector -> parquet")] 
 pub struct Cli {
     /// Symbol (e.g., BTCUSDT)
     #[arg(short = 's', long = "symbol", default_value = "BTCUSDT")]

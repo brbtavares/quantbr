@@ -25,16 +25,18 @@ cargo run -p backtester -- -s BTCUSDT --features .\data\features --from 2025-01-
 ```
 
 Notes:
-- Collector connects to Binance public streams (spot trades, aggTrades). For CI and local tests we use fixtures.
+- Collector connects to Binance public streams (spot trades). For CI and local tests we use fixtures.
 - Paths follow layout:
-  - raw ndjson.gz: `data/raw/{symbol}/YYYY-MM-DD.ndjson.gz`
-  - features parquet: `data/features/{symbol}/YYYY-MM-DD.parquet`
+  - raw trades (Parquet):
+    - single file per day: `data/raw/{symbol}/YYYY-MM-DD.parquet`, or
+    - sharded parts per day: `data/raw/{symbol}/YYYY-MM-DD/part-*.parquet`
+  - features (Parquet): `data/features/{symbol}/YYYY-MM-DD.parquet`
   - reports: `reports/*.csv`
 
 ## Crates
 - `common`: shared types, time utils, config, error types.
-- `datastore`: helpers for ndjson.gz and Parquet I/O with Polars.
-- `collector`: Binance connectors; writes raw ndjson.gz.
+- `datastore`: helpers for Parquet I/O with Polars (raw trades and features).
+- `collector`: Binance connector; writes raw Parquet trades.
 - `feature_builder`: aggregates trades to 1s bars and computes features.
 - `backtester`: event engine for momentum strategy; outputs metrics CSV.
 - `fixtures`: generates synthetic trade fixtures for tests and smoke run.

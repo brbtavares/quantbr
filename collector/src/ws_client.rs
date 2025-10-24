@@ -9,7 +9,7 @@ use tracing::{error, info, warn};
 
 use common::Trade;
 use crate::config::Cli;
-use datastore::ndjson::{GzNdjsonWriter, RawMessage};
+use datastore::rawparquet::RawParquetWriter;
 
 const BINANCE_WS: &str = "wss://stream.binance.com:9443/ws";
 
@@ -29,8 +29,8 @@ pub async fn run(cli: Cli) -> anyhow::Result<()> {
     let stream = format!("{symbol_l}@trade");
 
     let mut backoff = 1u64;
-    let mut writer = GzNdjsonWriter::new(&cli.raw_dir, &cli.symbol)
-        .context("create writer")?;
+    let mut writer = RawParquetWriter::new(&cli.raw_dir, &cli.symbol)
+        .context("create parquet writer")?;
 
     loop {
         info!("connecting to ws");
@@ -52,7 +52,7 @@ pub async fn run(cli: Cli) -> anyhow::Result<()> {
                             match msg.transpose() {
                                 Ok(Some(Message::Text(txt))) => {
                                     if let Ok(ev) = serde_json::from_str::<WsTradeEvent>(&txt) {
-                                        let _tr = Trade{
+                                        let tr = Trade{
                                             ts: ev.e,
                                             seq: ev.t,
                                             price: ev.p.parse().unwrap_or_default(),
@@ -60,9 +60,7 @@ pub async fn run(cli: Cli) -> anyhow::Result<()> {
                                             is_buyer_maker: ev.m,
                                             symbol: ev.s,
                                         };
-                                        let raw = RawMessage{ ts: ev.e, seq: ev.t, payload: txt };
-                                        writer.append(&raw)?;
-                                        // rotate daily by writer implementation
+                                        writer.append(tr)?;
                                     }
                                 }
                                 Ok(Some(Message::Binary(_))) => { /* ignore */ }

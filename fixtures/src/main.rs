@@ -2,10 +2,10 @@ use clap::{Parser, ValueHint};
 use rand::{rngs::StdRng, Rng, SeedableRng};
 use tracing::info;
 
-use datastore::ndjson::{GzNdjsonWriter, RawMessage};
+use datastore::rawparquet::RawParquetWriter;
 
 #[derive(Debug, Parser, Clone)]
-#[command(name = "fixtures", version, about = "Generate synthetic ndjson.gz raw trades for a day")]
+#[command(name = "fixtures", version, about = "Generate synthetic Parquet raw trades for a day")]
 pub struct Cli {
     #[arg(short='s', long="symbol", default_value = "BTCUSDT")]
     pub symbol: String,
@@ -26,7 +26,7 @@ pub struct Cli {
 fn main() -> anyhow::Result<()> {
     tracing_subscriber::fmt().with_env_filter("info").init();
     let cli = Cli::parse();
-    let mut w = GzNdjsonWriter::new(&cli.dir, &cli.symbol)?;
+    let mut w = RawParquetWriter::new(&cli.dir, &cli.symbol)?;
 
     // Build trades uniformly over the day starting at midnight UTC
     let base_ms = chrono::NaiveDate::parse_from_str(&cli.date, "%Y-%m-%d")?
@@ -40,11 +40,8 @@ fn main() -> anyhow::Result<()> {
     price = (price + dp).max(100.0_f64);
         let qty = rng.gen_range(0.001..0.5);
         let is_buyer_maker = rng.gen_bool(0.5);
-        let ev = serde_json::json!({
-            "E": ts, "s": cli.symbol, "t": i as i64, "p": format!("{:.2}", price), "q": format!("{:.4}", qty), "m": is_buyer_maker
-        });
-        let raw = RawMessage{ ts, seq: Some(i as i64), payload: ev.to_string() };
-        w.append(&raw)?;
+        let tr = common::Trade{ ts, seq: Some(i as i64), price, qty, is_buyer_maker, symbol: cli.symbol.clone() };
+        w.append(tr)?;
     }
     info!(count = cli.num, "wrote synthetic trades");
     Ok(())
